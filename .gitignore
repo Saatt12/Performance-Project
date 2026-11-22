@@ -1,0 +1,6 @@
+.DS_Store
+.env
+usuariosLocal.json
+usuarios.local.json
+resultados/*.ndjson
+resultados/*.log
