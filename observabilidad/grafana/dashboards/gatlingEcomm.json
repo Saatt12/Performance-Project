@@ -1,0 +1,339 @@
+{
+  "uid": "gatling-ecomm-k6",
+  "title": "Gatling E-commerce | Rendimiento k6",
+  "tags": [
+    "k6",
+    "gatling",
+    "rendimiento"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 41,
+  "version": 1,
+  "editable": true,
+  "refresh": "5s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "perfil",
+        "label": "Perfil",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "k6-prometheus"
+        },
+        "query": {
+          "query": "label_values(k6_http_reqs_total, scenario)",
+          "refId": "Variable"
+        },
+        "definition": "label_values(k6_http_reqs_total, scenario)",
+        "includeAll": true,
+        "allValue": ".+",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "refresh": 2
+      },
+      {
+        "name": "testid",
+        "label": "Ejecución",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "k6-prometheus"
+        },
+        "query": {
+          "query": "label_values(k6_http_reqs_total{scenario=~\"$perfil\"}, testid)",
+          "refId": "Variable"
+        },
+        "definition": "label_values(k6_http_reqs_total{scenario=~\"$perfil\"}, testid)",
+        "includeAll": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "refresh": 2
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Peticiones por segundo",
+      "description": "Tasa por perfil en una ventana móvil de 1 minuto para conservar datos de pruebas cortas.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "k6-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "min": 0,
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (testid) (rate(k6_http_reqs_total{testid=~\"$testid\"}[1m]))",
+          "legendFormat": "{{testid}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "k6-prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Usuarios virtuales activos",
+      "description": "Usuarios activos por ejecución durante el ensayo.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "k6-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (testid) (k6_vus{testid=~\"$testid\"})",
+          "legendFormat": "{{testid}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "k6-prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Latencia HTTP global",
+      "description": "Percentiles calculados a partir de histogramas nativos en una ventana móvil de 1 minuto.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "k6-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 16,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "min": 0,
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "1000 * histogram_quantile(0.9, sum by (testid) (rate(k6_http_req_duration_seconds{testid=~\"$testid\"}[1m])))",
+          "legendFormat": "P90 {{testid}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "k6-prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "1000 * histogram_quantile(0.95, sum by (testid) (rate(k6_http_req_duration_seconds{testid=~\"$testid\"}[1m])))",
+          "legendFormat": "P95 {{testid}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "k6-prometheus"
+          }
+        },
+        {
+          "refId": "C",
+          "expr": "1000 * histogram_quantile(0.99, sum by (testid) (rate(k6_http_req_duration_seconds{testid=~\"$testid\"}[1m])))",
+          "legendFormat": "P99 {{testid}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "k6-prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Errores HTTP",
+      "description": "Solicitudes fallidas divididas por solicitudes totales. Sin tráfico, la tasa queda sin valor.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "k6-prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 8,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "100 * sum by (testid) (rate(k6_errores_http_total{testid=~\"$testid\"}[1m])) / (sum by (testid) (rate(k6_http_reqs_total{testid=~\"$testid\"}[1m])) > 0)",
+          "legendFormat": "{{testid}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "k6-prometheus"
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Latencia P95 por operación",
+      "description": "Desglose por endpoint para localizar qué pasos aportan a la latencia de cola.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "k6-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "min": 0,
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "1000 * histogram_quantile(0.95, sum by (name, testid) (rate(k6_http_req_duration_seconds{testid=~\"$testid\"}[1m])))",
+          "legendFormat": "{{name}} · {{testid}}",
+          "range": true,
+          "instant": false,
+          "editorMode": "code",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "k6-prometheus"
+          }
+        }
+      ]
+    }
+  ]
+}
