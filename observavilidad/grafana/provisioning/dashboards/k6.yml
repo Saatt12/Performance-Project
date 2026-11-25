@@ -1,8 +1,0 @@
-apiVersion: 1
-
-providers:
-  - name: k6
-    folder: Rendimiento
-    type: file
-    options:
-      path: ${K6_DASHBOARD_PATH}
